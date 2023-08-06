@@ -1,9 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:mysql://43.139.238.194:3306/blog
-    username: xiaokabi
-    password: kabi123
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  redis:
-    host: 43.139.238.194
-    password: 123456
