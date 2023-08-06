@@ -21,8 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,10 +59,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         queryWrapper.orderByDesc(Article::getIsTop);
         Page<Article> page = new Page<>(pageNum, pageSize);
         page(page, queryWrapper);
-        page.getRecords().stream()
+        List<Article> list = page.getRecords();
+        Collections.reverse(list);
+        list.stream()
                 .map(article -> article.setCategoryName(categoryService.getById(article.getCategoryId()).getName()))
                 .collect(Collectors.toList());
-        return new PageVo(BeanCopyUtils.copyBean(page.getRecords(), ArticleListVo.class), page.getTotal());
+        return new PageVo(BeanCopyUtils.copyBean(list, ArticleListVo.class), page.getTotal());
     }
 
     @Override
@@ -75,7 +76,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         Integer viewCount = redisCache.getCacheMapValue("article:viewCount", id.toString());
         result.setViewCount(viewCount.longValue());
-
         Category category = categoryService.getById(result.getCategoryId());
         if (Objects.nonNull(category))result.setCategoryName(category.getName());
         return BeanCopyUtils.copyBean(result, ArticleVo.class);
@@ -91,6 +91,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public void add(AddArticleDto articleDto) {
         Article article = BeanCopyUtils.copyBean(articleDto, Article.class);
         save(article);
+        redisCache.setCacheMapValue("article:viewCount", article.getId().toString(), 0);
         List<ArticleTag> articleTags = articleDto.getTags().stream()
                 .map(tagId -> new ArticleTag(article.getId(), tagId))
                 .collect(Collectors.toList());
