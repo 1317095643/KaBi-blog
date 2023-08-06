@@ -17,4 +17,6 @@ public class ArticleListVo {
     private String thumbnail;
     private Long viewCount;
     private Date createTime;
+    private String isTop;
+    private Long categoryId;
 }

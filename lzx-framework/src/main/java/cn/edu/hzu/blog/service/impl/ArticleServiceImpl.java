@@ -56,11 +56,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Article::getStatus, SystemConstants.ARTICLE_STATUS_NORMAL);
         queryWrapper.eq(Objects.nonNull(categoryId) && categoryId > 0, Article::getCategoryId, categoryId);
-        queryWrapper.orderByDesc(Article::getIsTop);
+        queryWrapper.orderByAsc(Article::getIsTop);
+        queryWrapper.orderByDesc(Article::getCreateTime);
         Page<Article> page = new Page<>(pageNum, pageSize);
         page(page, queryWrapper);
         List<Article> list = page.getRecords();
-        Collections.reverse(list);
         list.stream()
                 .map(article -> article.setCategoryName(categoryService.getById(article.getCategoryId()).getName()))
                 .collect(Collectors.toList());
