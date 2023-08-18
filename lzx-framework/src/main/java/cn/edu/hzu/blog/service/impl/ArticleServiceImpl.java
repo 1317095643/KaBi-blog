@@ -22,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
@@ -39,16 +40,33 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public List<HotArticleVo> hotArticleList() {
-        LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
-        // 文章必须是已发布的
-        queryWrapper.eq(Article::getStatus, SystemConstants.ARTICLE_STATUS_NORMAL);
-        // 按照浏览量排序
-        queryWrapper.orderByDesc(Article::getViewCount);
-        // 查询前10个
-        Page<Article> page = new Page<>(1, 10);
-        page(page, queryWrapper);
-        List<Article> records = page.getRecords();
-        return BeanCopyUtils.copyBean(records, HotArticleVo.class);
+//        LambdaQueryWrapper<Article> queryWrapper = new LambdaQueryWrapper<>();
+//        // 文章必须是已发布的
+//        queryWrapper.eq(Article::getStatus, SystemConstants.ARTICLE_STATUS_NORMAL);
+//        // 按照浏览量排序
+//        queryWrapper.orderByDesc(Article::getViewCount);
+//        // 查询前10个
+//        Page<Article> page = new Page<>(1, 10);
+//        page(page, queryWrapper);
+//        List<Article> records = page.getRecords();
+//        return BeanCopyUtils.copyBean(records, HotArticleVo.class);
+
+        Map<String, Integer> map = redisCache.getCacheMap("article:viewCount");
+        // Sort the map by values in descending order
+        List<Map.Entry<String, Integer>> sortedEntries = map.entrySet()
+                .stream()
+                .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                .collect(toList());
+
+        // Get the top 10 entries
+        List<Map.Entry<String, Integer>> top10Entries = sortedEntries.subList(0, Math.min(10, sortedEntries.size()));
+
+        // Convert keys to long and store in a List<Long>
+        List<Article> articleList = top10Entries.stream()
+                .map(entry -> baseMapper.selectById(Long.parseLong(entry.getKey())).setViewCount(entry.getValue().longValue()))
+                .toList();
+
+        return BeanCopyUtils.copyBean(articleList, HotArticleVo.class);
     }
 
     @Override
@@ -63,7 +81,13 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         List<Article> list = page.getRecords();
         list.stream()
                 .map(article -> article.setCategoryName(categoryService.getById(article.getCategoryId()).getName()))
-                .collect(Collectors.toList());
+                .map(article -> {
+                    Integer viewCount = redisCache.getCacheMapValue("article:viewCount", article.getId().toString());
+                    if (viewCount != null)return article.setViewCount(viewCount.longValue());
+                    redisCache.setCacheMapValue("article:viewCount", article.getId().toString(), article.getViewCount().intValue());
+                    return article;
+                })
+                .collect(toList());
         return new PageVo(BeanCopyUtils.copyBean(list, ArticleListVo.class), page.getTotal());
     }
 
@@ -75,7 +99,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Article result = getOne(queryWrapper);
 
         Integer viewCount = redisCache.getCacheMapValue("article:viewCount", id.toString());
-        result.setViewCount(viewCount.longValue());
+        if (viewCount == null)redisCache.setCacheMapValue("article:viewCount", id.toString(), result.getViewCount().intValue());
+        else result.setViewCount(viewCount.longValue());
         Category category = categoryService.getById(result.getCategoryId());
         if (Objects.nonNull(category))result.setCategoryName(category.getName());
         return BeanCopyUtils.copyBean(result, ArticleVo.class);
@@ -94,7 +119,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         redisCache.setCacheMapValue("article:viewCount", article.getId().toString(), 0);
         List<ArticleTag> articleTags = articleDto.getTags().stream()
                 .map(tagId -> new ArticleTag(article.getId(), tagId))
-                .collect(Collectors.toList());
+                .collect(toList());
         articleTagService.saveBatch(articleTags);
     }
 
@@ -118,7 +143,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         queryWrapper.eq(ArticleTag::getArticleId, id);
         List<ArticleTag> list = articleTagService.list(queryWrapper);
         // 将查询出来的Tag信息封装进文章类
-        article.setTags(list.stream().map(ArticleTag::getTagId).collect(Collectors.toList()));
+        article.setTags(list.stream().map(ArticleTag::getTagId).collect(toList()));
         return article;
     }
 
