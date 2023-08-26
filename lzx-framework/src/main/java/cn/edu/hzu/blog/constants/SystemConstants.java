@@ -27,4 +27,10 @@ public class SystemConstants {
     public static final String STATUS_NORMAL = "0";
     public static final String ADMAIN = "1";
     public static final String NORMAL = "0";
+
+    public static final String VIEW_COUNT_KEY = "article:viewCount:sort";
+    public static final String ARTICLE_DETAIL = "article:detail:";
+    public static final Long ARTICLE_DETAIL_TTL = 3600L;
+    public static final Long CACHE_NULL_TTL = 2L;
+    public static final String CATEGORY_LIST = "category:list";
 }

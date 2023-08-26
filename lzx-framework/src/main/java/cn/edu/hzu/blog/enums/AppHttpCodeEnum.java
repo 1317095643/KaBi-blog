@@ -26,7 +26,8 @@ public enum AppHttpCodeEnum {
     ROLE_NAME_NOT_NULL(519, "角色名称不能为空"),
     ROLE_KEY_NOT_NULL(520, "权限字符不能为空"),
     UPDATE_STATUS_ONESELF(521, "不能更新自己的状态"),
-    CATEGORY_NAME_EXIST(522, "分类名称已存在");
+    CATEGORY_NAME_EXIST(522, "分类名称已存在"),
+    ARTICLE_ID_NOT_EXIST(523, "文章不存在");
     int code;
     String msg;
     AppHttpCodeEnum(int code, String errorMessage){
