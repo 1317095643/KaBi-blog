@@ -9,7 +9,7 @@ spring:
     pathmatch:
       matching-strategy: ant_path_matcher
   profiles:
-    active: test
+    active: dev
 
 mybatis-plus:
   configuration:
@@ -21,8 +21,4 @@ mybatis-plus:
       logic-not-delete-value: 0
       id-type: auto
 
-oss:
-  accessKey: jMP4hgpKbdixKgY4Q5u-bj6sJmirR_1o7CfDg_27
-  secretKey: GFrXotavFlRWqeaLbYO8ZNubSMPOiq-OSZrj9A4W
-  bucket: lzx-blog-avatar
-  url-prefix: http://cdn.xiaokabi.top/
+
